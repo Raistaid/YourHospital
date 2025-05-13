@@ -3,14 +3,15 @@ import sqlite3
 from datetime import date
 from flask import Flask, request, render_template
 
-#### Defining Flask App
+# Определение Flask приложения
 app = Flask(__name__)
 
-###### sqlite 3 code #######
+# Код для SQLite 3
 
 conn = sqlite3.connect('database/lifecare.db', check_same_thread=False)
 c = conn.cursor()
 
+# Создание таблиц
 c.execute('''CREATE TABLE IF NOT EXISTS doctors(
             first_name text,
             last_name text,
@@ -52,7 +53,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS doctorappointments(
             appointmentdate date
             )''')
 
-
+# Инициализация суперпользователя
 c.execute('SELECT * from superusercreds')
 conn.commit()
 adminuser = c.fetchall()
@@ -60,18 +61,16 @@ if not adminuser:
     c.execute("INSERT INTO superusercreds VALUES ('admin','admin')")
     conn.commit()
 
+# Вспомогательные функции
 def datetoday():
     today = datetime.now().strftime("%Y-%m-%d")
     return today
 
-
 def checkonlyalpha(x):
     return x.isalpha()
 
-
 def checkonlynum(x):
     return x.isdigit()
-
 
 def checkpass(x):
     f1, f2, f3 = False, False, False
@@ -83,21 +82,18 @@ def checkpass(x):
         f2 = True
     if any(c in x for c in ['@', '$', '!', '#', '%', '&', '*']):
         f3 = True
-
     return f1 and f2 and f3
-
 
 def checkphnlen(x):
     return len(x) == 10
 
-
+# Функции для работы с данными
 def retalldocsandapps():
     c.execute(f"SELECT * FROM doctorappointments")
     conn.commit()
     docsandapps = c.fetchall()
     l = len(docsandapps)
     return docsandapps, l
-
 
 def getpatdetails(phn):
     c.execute(f"SELECT * FROM patients")
@@ -107,7 +103,6 @@ def getpatdetails(phn):
         if str(i[3]) == str(phn):
             return i
 
-
 def getdocdetails(docid):
     c.execute(f"SELECT * FROM doctors")
     conn.commit()
@@ -115,7 +110,6 @@ def getdocdetails(docid):
     for i in doctors:
         if str(i[5]) == str(docid):
             return i
-
 
 def retdocsandapps(docid):
     c.execute(f"SELECT * FROM doctorappointments")
@@ -128,7 +122,6 @@ def retdocsandapps(docid):
     l = len(docsandapps2)
     return docsandapps2, l
 
-
 def retapprequests(docid):
     c.execute(f"SELECT * FROM doctorappointmentrequests")
     conn.commit()
@@ -140,7 +133,6 @@ def retapprequests(docid):
     l = len(appreq2)
     return appreq, l
 
-
 def ret_patient_reg_requests():
     c.execute('SELECT * FROM patients')
     conn.commit()
@@ -150,7 +142,6 @@ def ret_patient_reg_requests():
         if str(d[-1]) == '0':
             patient_reg_requests.append(d)
     return patient_reg_requests
-
 
 def ret_doctor_reg_requests():
     c.execute('SELECT * FROM doctors')
@@ -162,7 +153,6 @@ def ret_doctor_reg_requests():
             doctor_reg_requests.append(d)
     return doctor_reg_requests
 
-
 def ret_registered_patients():
     c.execute('SELECT * FROM patients')
     conn.commit()
@@ -172,7 +162,6 @@ def ret_registered_patients():
         if str(d[-1]) == '1':
             registered_patients.append(d)
     return registered_patients
-
 
 def ret_registered_doctors():
     c.execute('SELECT * FROM doctors')
@@ -184,7 +173,6 @@ def ret_registered_doctors():
             registered_doctors.append(d)
     return registered_doctors
 
-
 def ret_docname_docspec():
     c.execute('SELECT * FROM doctors')
     conn.commit()
@@ -195,7 +183,6 @@ def ret_docname_docspec():
     l = len(docname_docid)
     return docname_docid, l
 
-
 def getdocname(docid):
     c.execute('SELECT * FROM doctors')
     conn.commit()
@@ -203,7 +190,6 @@ def getdocname(docid):
     for i in registered_doctors:
         if str(i[5]) == str(docid):
             return i[0] + '-' + i[1]
-
 
 def getpatname(patnum):
     c.execute('SELECT * FROM patients')
@@ -215,7 +201,6 @@ def getpatname(patnum):
     else:
         return -1
 
-
 def get_all_docids():
     c.execute('SELECT * FROM doctors')
     conn.commit()
@@ -224,7 +209,6 @@ def get_all_docids():
     for i in registered_doctors:
         docids.append(str(i[5]))
     return docids
-
 
 def get_all_patnums():
     c.execute('SELECT * FROM patients')
@@ -235,41 +219,34 @@ def get_all_patnums():
         patnums.append(str(i[3]))
     return patnums
 
+# ОСНОВНЫЕ МАРШРУТЫ
 
-################## ROUTING FUNCTIONS #########################
-
-#### Our main page
+# Главная страница
 @app.route('/')
 def home():
     return render_template('home.html')
-
 
 @app.route('/patreg')
 def patreg():
     return render_template('patientregistration.html')
 
-
 @app.route('/docreg')
 def docreg():
     return render_template('doctorregistration.html')
-
 
 @app.route('/loginpage1')
 def loginpage1():
     return render_template('loginpage1.html')
 
-
 @app.route('/loginpage2')
 def loginpage2():
     return render_template('loginpage2.html')
-
 
 @app.route('/loginpage3')
 def loginpage3():
     return render_template('loginpage3.html')
 
-
-### Functions for adding Patients
+# Регистрация пациентов
 @app.route('/addpatient', methods=['POST'])
 def addpatient():
     passw = request.form['password']
@@ -281,24 +258,23 @@ def addpatient():
     print(firstname, lastname, checkonlyalpha(firstname), checkonlyalpha(lastname))
 
     if (not checkonlyalpha(firstname)) | (not checkonlyalpha(lastname)):
-        return render_template('home.html', mess=f'First Name and Last Name can only contain alphabets.')
+        return render_template('home.html', mess=f'Имя и фамилия должны содержать только буквы.')
 
     if not checkpass(passw):
         return render_template('home.html',
-                               mess=f"Password should be of length 8 and should contain alphabets, numbers and special characters ('@','$','!').")
+                               mess=f"Пароль должен быть длиной 8 символов и содержать буквы, цифры и спецсимволы ('@','$','!').")
 
     if not checkphnlen(phn):
-        return render_template('home.html', mess=f"Phone number should be of length 10.")
+        return render_template('home.html', mess=f"Номер телефона должен содержать 10 цифр.")
 
     if str(phn) in get_all_patnums():
-        return render_template('home.html', mess=f'Patient with mobile number {phn} already exists.')
+        return render_template('home.html', mess=f'Пациент с номером {phn} уже существует.')
     c.execute("INSERT INTO patients VALUES (?, ?, ?, ?, ?, ?, 0)",
               (firstname, lastname, dob, phn, passw, address))
     conn.commit()
-    return render_template('home.html', mess=f'Registration Request sent to Super Admin for Patient {firstname}.')
+    return render_template('home.html', mess=f'Запрос на регистрацию пациента {firstname} отправлен администратору.')
 
-
-### Functions for adding Doctors
+# Регистрация врачей
 @app.route('/adddoctor', methods=['GET', 'POST'])
 def adddoctor():
     passw = request.form['password']
@@ -311,29 +287,28 @@ def adddoctor():
     spec = request.form['speciality']
 
     if (not checkonlyalpha(firstname)) | (not checkonlyalpha(lastname)):
-        return render_template('home.html', mess=f'First Name and Last Name can only contain alphabets.')
+        return render_template('home.html', mess=f'Имя и фамилия должны содержать только буквы.')
 
     if not checkonlyalpha(spec):
-        return render_template('home.html', mess=f'Doctor Speciality can only contain alphabets.')
+        return render_template('home.html', mess=f'Специальность врача должна содержать только буквы.')
 
     if not checkpass(passw):
         return render_template('home.html',
-                               mess=f"Password should be of length 8 and should contain alphabets, numbers and special characters ('@','$','!').")
+                               mess=f"Пароль должен быть длиной 8 символов и содержать буквы, цифры и спецсимволы ('@','$','!').")
 
     if not checkphnlen(phn):
-        return render_template('home.html', mess=f"Phone number should be of length 10.")
+        return render_template('home.html', mess=f"Номер телефона должен содержать 10 цифр.")
 
     if str(docid) in get_all_docids():
-        return render_template('home.html', mess=f'Doctor with Doc ID {docid} already exists.')
-    if str(phn) in get_all_patnums():  # Это проверка пациентов, нужно для докторов
-        return render_template('home.html', mess=f'Phone number {phn} already registered.')
+        return render_template('home.html', mess=f'Врач с ID {docid} уже существует.')
+    if str(phn) in get_all_patnums():  # Проверка на уникальность номера
+        return render_template('home.html', mess=f'Номер {phn} уже зарегистрирован.')
     c.execute(
         f"INSERT INTO doctors VALUES ('{firstname}','{lastname}','{dob}','{phn}','{address}','{docid}','{passw}','{spec}',0)")
     conn.commit()
-    return render_template('home.html', mess=f'Registration Request sent to Super Admin for Doctor {firstname}.')
+    return render_template('home.html', mess=f'Запрос на регистрацию врача {firstname} отправлен администратору.')
 
-
-## Patient Login Page
+# Вход для пациентов
 @app.route('/patientlogin', methods=['GET', 'POST'])
 def patientlogin():
     phn = request.form['phn']
@@ -350,12 +325,10 @@ def patientlogin():
                 docnames.append(getdocname(i[0]))
             return render_template('patientlogin.html', docsandapps=docsandapps, docnames=docnames,
                                    docname_docid=docname_docid, l=l, l2=l2, patname=i[0], phn=phn)
-
     else:
         return render_template('loginpage1.html', err='Неверный телефон или пароль')
 
-
-## Doctor Login Page
+# Вход для врачей
 @app.route('/doctorlogin', methods=['GET', 'POST'])
 def doctorlogin():
     docid = request.form['docid']
@@ -372,12 +345,10 @@ def doctorlogin():
                                    appointment_requests_for_this_doctor=appointment_requests_for_this_doctor,
                                    fix_appointment_for_this_doctor=fix_appointment_for_this_doctor, l1=l1, l2=l2,
                                    docname=i[0], docid=docid)
-
     else:
-        return render_template('loginpage2.html', err='Please enter correct credentials...')
+        return render_template('loginpage2.html', err='Неверные учетные данные.')
 
-
-## Admin Login Page
+# Вход для администратора
 @app.route('/adminlogin', methods=['GET', 'POST'])
 def adminlogin():
     username = request.form['username']
@@ -400,10 +371,9 @@ def adminlogin():
                                    doctor_reg_requests=doctor_reg_requests, registered_patients=registered_patients,
                                    registered_doctors=registered_doctors, l1=l1, l2=l2, l3=l3, l4=l4)
     else:
-        return render_template('loginpage3.html', err='Неверный телефон или пароль.')
+        return render_template('loginpage3.html', err='Неверный логин или пароль.')
 
-
-## Delete patient from database    
+# Удаление пациентов
 @app.route('/deletepatient', methods=['GET', 'POST'])
 def deletepatient():
     patnum = request.values['patnum']
@@ -421,8 +391,7 @@ def deletepatient():
                            doctor_reg_requests=doctor_reg_requests, registered_patients=registered_patients,
                            registered_doctors=registered_doctors, l1=l1, l2=l2, l3=l3, l4=l4)
 
-
-## Delete doctor from database
+# Удаление врачей
 @app.route('/deletedoctor', methods=['GET', 'POST'])
 def deletedoctor():
     docid = request.values['docid']
@@ -440,8 +409,7 @@ def deletedoctor():
                            doctor_reg_requests=doctor_reg_requests, registered_patients=registered_patients,
                            registered_doctors=registered_doctors, l1=l1, l2=l2, l3=l3, l4=l4)
 
-
-## Patient Function to make appointment
+# Создание записи пациентом
 @app.route('/makeappointment', methods=['GET', 'POST'])
 def makeappointment():
     patnum = request.args['phn']
@@ -461,7 +429,7 @@ def makeappointment():
             docnames = []
             for i in docsandapps:
                 docnames.append(getdocname(i[0]))
-            return render_template('patientlogin.html', mess=f'Appointment Request sent to doctor.', docnames=docnames,
+            return render_template('patientlogin.html', mess=f'Запрос на запись отправлен врачу.', docnames=docnames,
                                    docsandapps=docsandapps, docname_docid=docname_docid, l=l, l2=l2, patname=patname)
         else:
             docsandapps, l = retalldocsandapps()
@@ -469,7 +437,7 @@ def makeappointment():
             docnames = []
             for i in docsandapps:
                 docnames.append(getdocname(i[0]))
-            return render_template('patientlogin.html', mess=f'No user with such contact number.', docnames=docnames,
+            return render_template('patientlogin.html', mess=f'Пациент с таким номером не найден.', docnames=docnames,
                                    docsandapps=docsandapps, docname_docid=docname_docid, l=l, l2=l2, patname=patname)
     else:
         docsandapps, l = retalldocsandapps()
@@ -477,12 +445,10 @@ def makeappointment():
         docnames = []
         for i in docsandapps:
             docnames.append(getdocname(i[0]))
-        return render_template('patientlogin.html', mess=f'Please select a date after today.', docnames=docnames,
+        return render_template('patientlogin.html', mess=f'Выберите дату после сегодняшнего дня.', docnames=docnames,
                                docsandapps=docsandapps, docname_docid=docname_docid, l=l, l2=l2, patname=patname)
 
-    ## Approve Doctor and add in registered doctors
-
-
+# Одобрение врача администратором
 @app.route('/approvedoctor')
 def approvedoctor():
     doctoapprove = request.values['docid']
@@ -514,14 +480,12 @@ def approvedoctor():
         l2 = len(doctor_reg_requests)
         l3 = len(registered_patients)
         l4 = len(registered_doctors)
-        return render_template('adminlogin.html', mess=f'Врач не одобрен',
+        return render_template('adminlogin.html', mess=f'Ошибка одобрения врача',
                                patient_reg_requests=patient_reg_requests, doctor_reg_requests=doctor_reg_requests,
                                registered_patients=registered_patients, registered_doctors=registered_doctors, l1=l1,
                                l2=l2, l3=l3, l4=l4)
 
-    ## Approve Patient and add in registered patients
-
-
+# Одобрение пациента администратором
 @app.route('/approvepatient')
 def approvepatient():
     pattoapprove = request.values['patnum']
@@ -544,7 +508,6 @@ def approvepatient():
                                    patient_reg_requests=patient_reg_requests, doctor_reg_requests=doctor_reg_requests,
                                    registered_patients=registered_patients, registered_doctors=registered_doctors,
                                    l1=l1, l2=l2, l3=l3, l4=l4)
-
     else:
         patient_reg_requests = ret_patient_reg_requests()
         doctor_reg_requests = ret_doctor_reg_requests()
@@ -554,14 +517,12 @@ def approvepatient():
         l2 = len(doctor_reg_requests)
         l3 = len(registered_patients)
         l4 = len(registered_doctors)
-        return render_template('adminlogin.html', mess=f'Пациент не одобрен',
+        return render_template('adminlogin.html', mess=f'Ошибка одобрения пациента',
                                patient_reg_requests=patient_reg_requests, doctor_reg_requests=doctor_reg_requests,
                                registered_patients=registered_patients, registered_doctors=registered_doctors, l1=l1,
                                l2=l2, l3=l3, l4=l4)
 
-    ## Approve an appointment request
-
-
+# Одобрение записи врачом
 @app.route('/doctorapproveappointment')
 def doctorapproveappointment():
     docid = request.values['docid']
@@ -578,8 +539,7 @@ def doctorapproveappointment():
                            appointment_requests_for_this_doctor=appointment_requests_for_this_doctor,
                            fix_appointment_for_this_doctor=fix_appointment_for_this_doctor, l1=l1, l2=l2, docid=docid)
 
-
-## Delete an appointment request
+# Удаление записи врачом
 @app.route('/doctordeleteappointment')
 def doctordeleteappointment():
     docid = request.values['docid']
@@ -592,8 +552,7 @@ def doctordeleteappointment():
                            appointment_requests_for_this_doctor=appointment_requests_for_this_doctor,
                            fix_appointment_for_this_doctor=fix_appointment_for_this_doctor, l1=l1, l2=l2, docid=docid)
 
-
-## Delete a doctor registration request
+# Удаление запроса врача
 @app.route('/deletedoctorrequest')
 def deletedoctorrequest():
     docid = request.values['docid']
@@ -611,8 +570,7 @@ def deletedoctorrequest():
                            doctor_reg_requests=doctor_reg_requests, registered_patients=registered_patients,
                            registered_doctors=registered_doctors, l1=l1, l2=l2, l3=l3, l4=l4)
 
-
-## Delete a patient registration request
+### Удаление запроса пациента
 @app.route('/deletepatientrequest')
 def deletepatientrequest():
     patnum = request.values['patnum']
@@ -630,14 +588,14 @@ def deletepatientrequest():
                            doctor_reg_requests=doctor_reg_requests, registered_patients=registered_patients,
                            registered_doctors=registered_doctors, l1=l1, l2=l2, l3=l3, l4=l4)
 
-
+# Обновление данных пациента
 @app.route('/updatepatient')
 def updatepatient():
     phn = request.args['phn']
     fn, ln, dob, phn, passw, add, status = getpatdetails(phn)
     return render_template('updatepatient.html', fn=fn, ln=ln, dob=dob, phn=phn, passw=passw, add=add, status=status)
 
-
+# Обновление данных врача
 @app.route('/updatedoctor')
 def updatedoctor():
     docid = request.args['docid']
@@ -645,7 +603,7 @@ def updatedoctor():
     return render_template('updatedoctor.html', fn=fn, ln=ln, dob=dob, phn=phn, passw=passw, add=add, status=status,
                            spec=spec, docid=docid)
 
-
+# Сохранение изменений врача
 @app.route('/makedoctorupdates', methods=['GET', 'POST'])
 def makedoctorupdates():
     firstname = request.form['firstname']
@@ -667,9 +625,9 @@ def makedoctorupdates():
     conn.commit()
     c.execute("UPDATE doctors SET speciality=(?) WHERE doc_id=(?)", (spec, docid))
     conn.commit()
-    return render_template('home.html', mess='Updations Done Successfully!!!')
+    return render_template('home.html', mess='Данные успешно обновлены!')
 
-
+# Сохранение изменений пациента
 @app.route('/makepatientupdates', methods=['GET', 'POST'])
 def makepatientupdates():
     firstname = request.form['firstname']
@@ -685,9 +643,8 @@ def makepatientupdates():
     conn.commit()
     c.execute("UPDATE patients SET address=(?) WHERE phone_number=(?)", (address, phn))
     conn.commit()
-    return render_template('home.html', mess='Updations Done Successfully!!!')
+    return render_template('home.html', mess='Данные успешно обновлены!')
 
-
-#### Our main function which runs the Flask App
+# Запуск приложения
 if __name__ == '__main__':
     app.run(debug=True)
