@@ -52,13 +52,13 @@ c.execute('''CREATE TABLE IF NOT EXISTS doctorappointments(
             appointmentdate date
             )''')
 
-
 c.execute('SELECT * from superusercreds')
 conn.commit()
 adminuser = c.fetchall()
 if not adminuser:
     c.execute("INSERT INTO superusercreds VALUES ('admin','admin')")
     conn.commit()
+
 
 def datetoday():
     today = datetime.now().strftime("%Y-%m-%d")
@@ -443,42 +443,100 @@ def deletedoctor():
 
 ## Patient Function to make appointment
 @app.route('/makeappointment', methods=['GET', 'POST'])
+@app.route('/makeappointment', methods=['POST'])
 def makeappointment():
-    patnum = request.args['phn']
-    appdate = request.form['appdate']
-    whichdoctor = request.form['whichdoctor']
-    docname = whichdoctor.split('-')[0]
-    docid = whichdoctor.split('-')[1]
-    patname = getpatname(patnum)
-    appdate2 = datetime.strptime(appdate, '%Y-%m-%d').strftime("%Y-%m-%d")
-    print(appdate2, datetoday())
-    if appdate2 > datetoday():
-        if patname != -1:
-            c.execute(f"INSERT INTO doctorappointmentrequests VALUES ('{docid}','{patname}','{patnum}','{appdate}')")
-            conn.commit()
-            docsandapps, l = retalldocsandapps()
-            docname_docid, l2 = ret_docname_docspec()
-            docnames = []
-            for i in docsandapps:
-                docnames.append(getdocname(i[0]))
-            return render_template('patientlogin.html', mess=f'Appointment Request sent to doctor.', docnames=docnames,
-                                   docsandapps=docsandapps, docname_docid=docname_docid, l=l, l2=l2, patname=patname)
-        else:
-            docsandapps, l = retalldocsandapps()
-            docname_docid, l2 = ret_docname_docspec()
-            docnames = []
-            for i in docsandapps:
-                docnames.append(getdocname(i[0]))
-            return render_template('patientlogin.html', mess=f'No user with such contact number.', docnames=docnames,
-                                   docsandapps=docsandapps, docname_docid=docname_docid, l=l, l2=l2, patname=patname)
-    else:
-        docsandapps, l = retalldocsandapps()
-        docname_docid, l2 = ret_docname_docspec()
-        docnames = []
-        for i in docsandapps:
-            docnames.append(getdocname(i[0]))
-        return render_template('patientlogin.html', mess=f'Please select a date after today.', docnames=docnames,
-                               docsandapps=docsandapps, docname_docid=docname_docid, l=l, l2=l2, patname=patname)
+    try:
+        # Получение данных
+        phn = request.args.get('phn')
+        appdate = request.form.get('appdate')
+        whichdoctor = request.form.get('whichdoctor')
+
+        # Проверка обязательных полей
+        if not all([phn, appdate, whichdoctor]):
+            return render_template('patientlogin.html',
+                                   mess="Заполните все поля: врач и дата!",
+                                   phn=phn,
+                                   docname_docid=ret_docname_docspec()[0],
+                                   docsandapps=retalldocsandapps()[0],
+                                   l=retalldocsandapps()[1],
+                                   l2=ret_docname_docspec()[1]
+                                   )
+
+        # Проверка существования пациента
+        patname = getpatname(phn)
+        if patname == -1:
+            return render_template('patientlogin.html',
+                                   mess="Пациент не найден!",
+                                   phn=phn,
+                                   docname_docid=ret_docname_docspec()[0],
+                                   docsandapps=retalldocsandapps()[0],
+                                   l=retalldocsandapps()[1],
+                                   l2=ret_docname_docspec()[1]
+                                   )
+
+        # Извлечение ID врача из выбранного значения
+        try:
+            docid = whichdoctor.split('-')[-2].strip()  # Формат: "Имя Фамилия - ID - Специальность"
+        except IndexError:
+            return render_template('patientlogin.html',
+                                   mess="Ошибка выбора врача!",
+                                   phn=phn,
+                                   docname_docid=ret_docname_docspec()[0],
+                                   docsandapps=retalldocsandapps()[0],
+                                   l=retalldocsandapps()[1],
+                                   l2=ret_docname_docspec()[1]
+                                   )
+
+        # Проверка даты
+        appdate_obj = datetime.strptime(appdate, '%Y-%m-%d').date()
+        today = datetime.now().date()
+        if appdate_obj <= today:
+            return render_template('patientlogin.html',
+                                   mess="Выберите дату в будущем!",
+                                   phn=phn,
+                                   docname_docid=ret_docname_docspec()[0],
+                                   docsandapps=retalldocsandapps()[0],
+                                   l=retalldocsandapps()[1],
+                                   l2=ret_docname_docspec()[1]
+                                   )
+
+        # Проверка существования врача
+        if docid not in get_all_docids():
+            return render_template('patientlogin.html',
+                                   mess="Врач не найден!",
+                                   phn=phn,
+                                   docname_docid=ret_docname_docspec()[0],
+                                   docsandapps=retalldocsandapps()[0],
+                                   l=retalldocsandapps()[1],
+                                   l2=ret_docname_docspec()[1]
+                                   )
+
+        # Сохранение запроса в БД (безопасный запрос)
+        c.execute('''
+            INSERT INTO doctorappointmentrequests (docid, patientname, patientnum, appointmentdate)
+            VALUES (?, ?, ?, ?)
+        ''', (docid, patname, phn, appdate))
+        conn.commit()
+
+        return render_template('patientlogin.html',
+                               mess="Запрос отправлен врачу!",
+                               phn=phn,
+                               docname_docid=ret_docname_docspec()[0],
+                               docsandapps=retalldocsandapps()[0],
+                               l=retalldocsandapps()[1],
+                               l2=ret_docname_docspec()[1]
+                               )
+
+    except Exception as e:
+        print(f"Ошибка: {str(e)}")
+        return render_template('patientlogin.html',
+                               mess="Ошибка сервера. Попробуйте позже.",
+                               phn=phn,
+                               docname_docid=ret_docname_docspec()[0],
+                               docsandapps=retalldocsandapps()[0],
+                               l=retalldocsandapps()[1],
+                               l2=ret_docname_docspec()[1]
+                               )
 
     ## Approve Doctor and add in registered doctors
 

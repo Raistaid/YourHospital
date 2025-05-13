@@ -10,7 +10,7 @@
 
 
     body {
-        background-image: url('./name.jpg.jpg');
+        background-image: url("{{ url_for('static', filename='images/background.jpg') }}");
         background-size: cover;
         font-family: sans-serif;
         margin-top: 40px;

@@ -17,7 +17,7 @@
 
 
     body {
-        background-image: url('./name.jpg.jpg');
+        background-image: url("{{ url_for('static', filename='images/background.jpg') }}");
         background-size: cover;
         font-family: sans-serif;
         margin-top: 40px;
@@ -82,7 +82,7 @@
     <h1 class="text-center" style="color:rgb(17, 15, 15);">LifeCare Health System</h1>
 
     <div class="row mt-5">
-        <h2 class="text-center" style="color:rgb(11, 9, 9);margin-bottom: 35px;"> Welcome </h2>
+
 
         <div class="col">
             <h2 style="text-align: center;font-size: 25px;color: rgb(17, 11, 11);">Doctors and their scheduled appointments</h2>
