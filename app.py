@@ -716,11 +716,11 @@ def deletepatientrequest():
 def updatepatient():
     phn = request.args.get('phn')  # Безопасное получение параметра
     if not phn:
-        return render_template('error.html', mess="Номер телефона не указан")
+        return render_template('updatepatient.html', mess="Номер телефона не указан")
 
     patient = getpatdetails(phn)
     if not patient:
-        return render_template('error.html', mess="Пациент не найден")
+        return render_template('updatepatient.html', mess="Пациент не найден")
 
     # Правильная распаковка (убедитесь, что структура таблицы совпадает)
     fn, ln, dob, phn_db, passw, add, status = patient
@@ -760,7 +760,7 @@ def makedoctorupdates():
     conn.commit()
     c.execute("UPDATE doctors SET speciality=(?) WHERE doc_id=(?)", (spec, docid))
     conn.commit()
-    return render_template('home.html', mess='Данные успешно обновлены')
+    return render_template('doctorlogin.html', mess='Данные успешно обновлены')
 
 
 # Сохранение изменений пациента
@@ -779,7 +779,7 @@ def makepatientupdates():
     conn.commit()
     c.execute("UPDATE patients SET address=(?) WHERE phone_number=(?)", (address, phn))
     conn.commit()
-    return render_template('home.html', mess='Данные успешно обновлены')
+    return render_template('patientlogin.html', mess='Данные успешно обновлены')
 
 
 # Запуск приложения
