@@ -341,23 +341,39 @@ def patientlogin():
     phn = request.args.get('phn')
     if not phn:
         return render_template('patientlogin.html', mess="Номер телефона не указан")
+
     passw = request.form['pass']
     c.execute('SELECT * FROM patients')
     conn.commit()
     registerd_patients = c.fetchall()
+
     for i in registerd_patients:
         if str(i[3]) == str(phn) and str(i[4]) == str(passw):
+            # Получение данных для отображения
             docsandapps, l = retalldocsandapps()
             docname_docid, l2 = ret_docname_docspec()
+
+            # Формирование имён врачей для таблицы
             docnames = []
-            for i in docsandapps:
-                docnames.append(getdocname(i[0]))
-            return render_template('patientlogin.html', docsandapps=docsandapps, docnames=docnames,
-                                   docname_docid=docname_docid, l=l, l2=l2, patname=i[0], phn=phn)
+            for app in docsandapps:
+                doc_name = getdocname(app[0])  # Получение имени врача по ID
+                docnames.append(doc_name)
 
-    else:
-        return render_template('loginpage1.html', err='Неверный телефон или пароль')
+            # Получение имени пациента для приветствия
+            pat_details = getpatdetails(phn)
+            patname = f"{pat_details[0]} {pat_details[1]}" if pat_details else "Гость"
 
+            return render_template('patientlogin.html',
+                                   docsandapps=docsandapps,
+                                   docnames=docnames,
+                                   docname_docid=docname_docid,
+                                   l=l,
+                                   l2=l2,
+                                   patname=patname,
+                                   phn=phn,
+                                   mess=f"Добро пожаловать, {patname}!")
+
+    return render_template('loginpage1.html', err='Неверный телефон или пароль')
 
 # Вход для врачей
 @app.route('/doctorlogin', methods=['GET', 'POST'])

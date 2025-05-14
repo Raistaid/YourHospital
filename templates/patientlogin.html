@@ -97,7 +97,17 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Динамическое содержимое -->
+                            {% for app in docsandapps %}
+                            <tr>
+                                <td>{{ app[0] }}</td>               <!-- ID врача -->
+                                <td>{{ docnames[loop.index0] }}</td> <!-- Имя врача -->
+                                <td>{{ app[3] }}</td>               <!-- Дата приема -->
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center">Нет активных записей</td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -110,8 +120,14 @@
                     <form action='/makeappointment?phn={{phn}}' method="POST">
                         <div class="mb-3">
                             <label for="whichdoctor" class="form-label text-white">Выберите врача</label>
-                            <select class="form-select" id="whichdoctor" name="whichdoctor">
-                                <!-- Динамические опции -->
+                            <select class="form-select" id="whichdoctor" name="whichdoctor" required>
+                                <option value="" disabled selected>Выберите врача</option>
+                                {% for doc_info in docname_docid %}
+                                    {% set parts = doc_info.split('-') %}
+                                    <option value="{{ parts[1] }}">
+                                        {{ parts[0] }} ({{ parts[2] }})
+                                    </option>
+                                {% endfor %}
                             </select>
                         </div>
 
