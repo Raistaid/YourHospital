@@ -289,8 +289,6 @@ def addpatient():
         return render_template('home.html',
                                mess=f"Пароль должен быть длиной более 8 символов и содержать буквы, цифры и спецсимволы ('@','$','!')")
 
-    if not checkphnlen(phn):
-        return render_template('home.html', mess=f"Номер телефона должен содержать 11 цифр")
 
     if str(phn) in get_all_patnums():
         return render_template('home.html', mess=f'Пациент с номером {phn} уже существует')
@@ -322,8 +320,6 @@ def adddoctor():
         return render_template('home.html',
                                mess=f"Пароль должен быть длиной более 8 символов и содержать буквы, цифры и спецсимволы ('@','$','!')")
 
-    if not checkphnlen(phn):
-        return render_template('home.html', mess=f"Номер телефона должен содержать 11 цифр.")
 
     if str(docid) in get_all_docids():
         return render_template('home.html', mess=f'Врач с ID {docid} уже существует.')
