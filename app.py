@@ -341,22 +341,40 @@ def patientlogin():
     phn = request.args.get('phn')
     if not phn:
         return render_template('patientlogin.html', mess="Номер телефона не указан")
-    passw = request.form['pass']
+    passw = request.form.get('pass')
+    if not passw:
+        return render_template('loginpage1.html', err='Пароль не указан')
     c.execute('SELECT * FROM patients')
     conn.commit()
     registerd_patients = c.fetchall()
+
     for i in registerd_patients:
         if str(i[3]) == str(phn) and str(i[4]) == str(passw):
+            # Получение данных для отображения
             docsandapps, l = retalldocsandapps()
             docname_docid, l2 = ret_docname_docspec()
-            docnames = []
-            for i in docsandapps:
-                docnames.append(getdocname(i[0]))
-            return render_template('patientlogin.html', docsandapps=docsandapps, docnames=docnames,
-                                   docname_docid=docname_docid, l=l, l2=l2, patname=i[0], phn=phn)
 
-    else:
-        return render_template('loginpage1.html', err='Неверный телефон или пароль')
+            # Формирование имён врачей для таблицы
+            docnames = []
+            for app in docsandapps:
+                doc_name = getdocname(app[0])  # Получение имени врача по ID
+                docnames.append(doc_name)
+
+            # Получение имени пациента для приветствия
+            pat_details = getpatdetails(phn)
+            patname = f"{pat_details[0]} {pat_details[1]}" if pat_details else "Гость"
+
+            return render_template('patientlogin.html',
+                                   docsandapps=docsandapps,
+                                   docnames=docnames,
+                                   docname_docid=docname_docid,
+                                   l=l,
+                                   l2=l2,
+                                   patname=patname,
+                                   phn=phn,
+                                   mess=f"Добро пожаловать, {patname}!")
+
+    return render_template('loginpage1.html', err='Неверный телефон или пароль')
 
 
 # Вход для врачей
@@ -722,7 +740,7 @@ def updatepatient():
     if not patient:
         return render_template('updatepatient.html', mess="Пациент не найден")
 
-    # Правильная распаковка (убедитесь, что структура таблицы совпадает)
+    # Распаковка данных
     fn, ln, dob, phn_db, passw, add, status = patient
     return render_template('updatepatient.html',
                            fn=fn, ln=ln, dob=dob, phn=phn_db,
@@ -741,13 +759,13 @@ def updatedoctor():
 # Сохранение изменений врача
 @app.route('/makedoctorupdates', methods=['GET', 'POST'])
 def makedoctorupdates():
-    firstname = request.form['firstname']
-    lastname = request.form['lastname']
-    dob = request.form['dob']
-    phn = request.form['phn']
-    address = request.form['address']
+    firstname = request.form.get('firstname')
+    lastname = request.form.get('lastname')
+    dob = request.form.get('dob')
+    phn = request.form.get('phn')
+    address = request.form.get('address')
     docid = request.args['docid']
-    spec = request.form['speciality']
+    spec = request.form.get('speciality')
     c.execute("UPDATE doctors SET first_name=(?) WHERE doc_id=(?)", (firstname, docid))
     conn.commit()
     c.execute("UPDATE doctors SET last_name=(?) WHERE doc_id=(?)", (lastname, docid))
@@ -766,11 +784,11 @@ def makedoctorupdates():
 # Сохранение изменений пациента
 @app.route('/makepatientupdates', methods=['GET', 'POST'])
 def makepatientupdates():
-    firstname = request.form['firstname']
-    lastname = request.form['lastname']
-    dob = request.form['dob']
-    phn = request.args['phn']
-    address = request.form['address']
+    firstname = request.form.get('firstname')
+    lastname = request.form.get('lastname')
+    dob = request.form.get('dob')
+    phn = request.form.get('phn')
+    address = request.form.get('address')
     c.execute("UPDATE patients SET first_name=(?) WHERE phone_number=(?)", (firstname, phn))
     conn.commit()
     c.execute("UPDATE patients SET last_name=(?) WHERE phone_number=(?)", (lastname, phn))
