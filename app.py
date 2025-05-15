@@ -188,14 +188,15 @@ def ret_registered_doctors():
 
 
 def ret_docname_docspec():
-    c.execute('SELECT * FROM doctors')
+    c.execute('SELECT first_name, last_name, doc_id, speciality FROM doctors WHERE status=1')
     conn.commit()
     registered_doctors = c.fetchall()
     docname_docid = []
-    for i in registered_doctors:
-        docname_docid.append(str(i[0]) + ' ' + str(i[1]) + '-' + str(i[5]) + '-' + str(i[7]))
-    l = len(docname_docid)
-    return docname_docid, l
+    for doc in registered_doctors:
+        # Формат: "Имя Фамилия | ID | Специальность"
+        formatted = f"{doc[0]} {doc[1]} | {doc[2]} | {doc[3]}"
+        docname_docid.append(formatted)
+    return docname_docid, len(docname_docid)
 
 
 def getdocname(docid):
@@ -337,40 +338,54 @@ def patientlogin():
     phn = request.args.get('phn')
     if not phn:
         return render_template('patientlogin.html', mess="Номер телефона не указан")
+
     passw = request.form.get('pass')
     if not passw:
         return render_template('loginpage1.html', err='Пароль не указан')
-    c.execute('SELECT * FROM patients')
-    conn.commit()
-    registerd_patients = c.fetchall()
 
-    for i in registerd_patients:
-        if str(i[3]) == str(phn) and str(i[4]) == str(passw):
-            # Получение данных для отображения
-            docsandapps, l = retalldocsandapps()
-            docname_docid, l2 = ret_docname_docspec()
+    # Проверка учетных данных пациента
+    c.execute('SELECT * FROM patients WHERE phone_number=? AND password=?', (phn, passw))
+    patient = c.fetchone()
 
-            # Формирование имён врачей для таблицы
-            docnames = []
-            for app in docsandapps:
-                doc_name = getdocname(app[0])  # Получение имени врача по ID
-                docnames.append(doc_name)
+    if not patient:
+        return render_template('loginpage1.html', err='Неверный телефон или пароль')
 
-            # Получение имени пациента для приветствия
-            pat_details = getpatdetails(phn)
-            patname = f"{pat_details[0]} {pat_details[1]}" if pat_details else "Гость"
+    # Получение данных для отображения
+    try:
+        # Получить все подтвержденные записи пациента
+        docsandapps, l = retalldocsandapps()
 
-            return render_template('patientlogin.html',
-                                   docsandapps=docsandapps,
-                                   docnames=docnames,
-                                   docname_docid=docname_docid,
-                                   l=l,
-                                   l2=l2,
-                                   patname=patname,
-                                   phn=phn,
-                                   mess=f"Добро пожаловать, {patname}!")
+        # Получить список врачей для выпадающего списка
+        docname_docid, l2 = ret_docname_docspec()
 
-    return render_template('loginpage1.html', err='Неверный телефон или пароль')
+        # Сформировать имена врачей для таблицы
+        docnames = []
+        for app in docsandapps:
+            doc_name = getdocname(app[0])  # Получение имени по ID
+            docnames.append(doc_name)
+
+        # Данные пациента
+        patname = f"{patient[0]} {patient[1]}"
+
+        return render_template(
+            'patientlogin.html',
+            docsandapps=docsandapps,
+            docnames=docnames,
+            docname_docid=docname_docid,
+            l=l,
+            l2=l2,
+            patname=patname,
+            phn=phn,
+            mess=f"Добро пожаловать, {patname}!"
+        )
+
+    except Exception as e:
+        print(f"Ошибка: {str(e)}")
+        return render_template(
+            'patientlogin.html',
+            mess="Ошибка загрузки данных",
+            phn=phn
+        )
 
 
 # Вход для врачей
