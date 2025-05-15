@@ -1,6 +1,5 @@
 from datetime import datetime
 import sqlite3
-from datetime import date
 from flask import Flask, request, render_template
 
 # Определение Flask приложения
@@ -53,7 +52,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS doctorappointments(
             appointmentdate date
             )''')
 
-# Инициализация суперпользователя
+# Инициализация админа
 c.execute('SELECT * from superusercreds')
 conn.commit()
 adminuser = c.fetchall()
