@@ -122,12 +122,16 @@
                             <label for="whichdoctor" class="form-label text-white">Выберите врача</label>
                             <select class="form-select" id="whichdoctor" name="whichdoctor" required>
                                 <option value="" disabled selected>Выберите врача</option>
-                                {% for doc_info in docname_docid %}
-                                    {% set parts = doc_info.split('-') %}
-                                    <option value="{{ parts[1] }}">
-                                        {{ parts[0] }} ({{ parts[2] }})
-                                    </option>
-                                {% endfor %}
+                                {% if docname_docid %}
+                                    {% for doc_info in docname_docid %}
+                                        {% set parts = doc_info.split('|') %}
+                                        <option value="{{ parts[1].strip() }}">
+                                            {{ parts[0].strip() }} ({{ parts[2].strip() }})
+                                        </option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option disabled>Нет доступных врачей</option>
+                                {% endif %}
                             </select>
                         </div>
 
