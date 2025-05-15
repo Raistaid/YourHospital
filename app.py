@@ -507,21 +507,27 @@ def deletedoctor():
 
 
 # Создание записи пациентом
-@app.route('/makeappointment', methods=['GET', 'POST'])
+@app.route('/makeappointment', methods=['POST'])
 def makeappointment():
     try:
         phn = request.args.get('phn')
         appdate = request.form.get('appdate')
         whichdoctor = request.form.get('whichdoctor')
 
+        docsandapps, l = retalldocsandapps()
+        docname_docid, l2 = ret_docname_docspec()
+        docnames = [getdocname(app[0]) for app in docsandapps]
+
+        # Проверка заполненности полей
         if not all([phn, appdate, whichdoctor]):
             return render_template('patientlogin.html',
                                    mess="Заполните все поля: врач и дата",
                                    phn=phn,
-                                   docname_docid=ret_docname_docspec()[0],
-                                   docsandapps=retalldocsandapps()[0],
-                                   l=retalldocsandapps()[1],
-                                   l2=ret_docname_docspec()[1]
+                                   docname_docid=docname_docid,
+                                   docsandapps=docsandapps,
+                                   l=l,
+                                   l2=l2,
+                                   docnames=docnames
                                    )
 
         patname = getpatname(phn)
@@ -529,44 +535,36 @@ def makeappointment():
             return render_template('patientlogin.html',
                                    mess="Пациент не найден",
                                    phn=phn,
-                                   docname_docid=ret_docname_docspec()[0],
-                                   docsandapps=retalldocsandapps()[0],
-                                   l=retalldocsandapps()[1],
-                                   l2=ret_docname_docspec()[1]
+                                   docname_docid=docname_docid,
+                                   docsandapps=docsandapps,
+                                   l=l,
+                                   l2=l2,
+                                   docnames=docnames
                                    )
 
-        try:
-            docid = whichdoctor.strip()
-        except IndexError:
-            return render_template('patientlogin.html',
-                                   mess="Ошибка при выборе врача",
-                                   phn=phn,
-                                   docname_docid=ret_docname_docspec()[0],
-                                   docsandapps=retalldocsandapps()[0],
-                                   l=retalldocsandapps()[1],
-                                   l2=ret_docname_docspec()[1]
-                                   )
-
+        docid = whichdoctor.strip()
         appdate_obj = datetime.strptime(appdate, '%Y-%m-%d').date()
         today = datetime.now().date()
         if appdate_obj <= today:
             return render_template('patientlogin.html',
-                                   mess="Выберите дату",
+                                   mess="Выберите дату в будущем",
                                    phn=phn,
-                                   docname_docid=ret_docname_docspec()[0],
-                                   docsandapps=retalldocsandapps()[0],
-                                   l=retalldocsandapps()[1],
-                                   l2=ret_docname_docspec()[1]
+                                   docname_docid=docname_docid,
+                                   docsandapps=docsandapps,
+                                   l=l,
+                                   l2=l2,
+                                   docnames=docnames
                                    )
 
         if docid not in get_all_docids():
             return render_template('patientlogin.html',
                                    mess="Врач не найден",
                                    phn=phn,
-                                   docname_docid=ret_docname_docspec()[0],
-                                   docsandapps=retalldocsandapps()[0],
-                                   l=retalldocsandapps()[1],
-                                   l2=ret_docname_docspec()[1]
+                                   docname_docid=docname_docid,
+                                   docsandapps=docsandapps,
+                                   l=l,
+                                   l2=l2,
+                                   docnames=docnames
                                    )
 
         c.execute('''
@@ -578,22 +576,29 @@ def makeappointment():
         return render_template('patientlogin.html',
                                mess="Запрос отправлен врачу",
                                phn=phn,
-                               docname_docid=ret_docname_docspec()[0],
-                               docsandapps=retalldocsandapps()[0],
-                               l=retalldocsandapps()[1],
-                               l2=ret_docname_docspec()[1]
+                               docname_docid=docname_docid,
+                               docsandapps=docsandapps,
+                               l=l,
+                               l2=l2,
+                               docnames=docnames
                                )
 
     except Exception as e:
-        print(f"Ошибка: {str(e)}")
+        print(f"Ошибка makeappointment: {e}")
+        docsandapps, l = retalldocsandapps()
+        docname_docid, l2 = ret_docname_docspec()
+        docnames = [getdocname(app[0]) for app in docsandapps]
+
         return render_template('patientlogin.html',
                                mess="Ошибка сервера. Попробуйте позже",
                                phn=phn,
-                               docname_docid=ret_docname_docspec()[0],
-                               docsandapps=retalldocsandapps()[0],
-                               l=retalldocsandapps()[1],
-                               l2=ret_docname_docspec()[1]
+                               docname_docid=docname_docid,
+                               docsandapps=docsandapps,
+                               l=l,
+                               l2=l2,
+                               docnames=docnames
                                )
+
 
 
 # Одобрение врача администратором
@@ -676,10 +681,11 @@ def approvepatient():
 # Одобрение записи врачом
 @app.route('/doctorapproveappointment')
 def doctorapproveappointment():
-    docid = request.values['docid']
-    patnum = request.values['patnum']
-    patname = request.values['patname']
-    appdate = request.values['appdate']
+    docid = request.args.get('docid')
+    patnum = request.args.get('patnum')
+    patname = request.args.get('patname')
+    appdate = request.args.get('appdate')
+
     c.execute(f"INSERT INTO doctorappointments VALUES ('{docid}','{patname}','{patnum}','{appdate}')")
     conn.commit()
     c.execute(f"DELETE FROM doctorappointmentrequests WHERE patientnum='{str(patnum)}'")

@@ -144,8 +144,13 @@
                                 <td>{{ request[2] }}</td>
                                 <td>{{ request[3] }}</td>
                                 <td>
-                                    <a href="/doctorapproveappointment?docid={{ request[0] }}&patnum={{ request[2] }}&appdate={{ request[3] }}"
-                                       class="btn btn-success btn-sm btn-action">Подтвердить</a>
+                                    <a href="{{ url_for('doctorapproveappointment',
+                                                        docid=docid,
+                                                        patnum=req[2],
+                                                        patname=req[1],
+                                                        appdate=req[3]) }}">
+                                        Одобрить
+                                    </a>
                                     <a href="/doctordeleteappointment?docid={{ request[0] }}&patnum={{ request[2] }}"
                                        class="btn btn-danger btn-sm btn-action">Удалить</a>
                                 </td>
