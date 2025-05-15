@@ -66,16 +66,16 @@
 <h1 class="text-center" style="color: rgb(16, 13, 13);">Вход для пациентов</h1>
 <div class="text-center mt-5"
      style="background-color:  rgb(0,0,0,0.7);color: white;width: 367px;padding: 16px;margin: auto;">
-    <form action='/patientlogin' method="POST" enctype="multipart/form-data">
-        <label style="font-size: 20px;"><b>Номер телефона*</b></label><br>
-        <input type="number" id="phn" name='phn' style="font-size: 20px;margin-top:10px;margin-bottom:10px;"
-               required><br>
-        <label style="font-size: 20px;"><b>Пароль*</b></label><br>
-        <input type="password" id="pass" name='pass' style="font-size: 20px;margin-top:10px;margin-bottom:10px;"
-               required><br>
-        <button style="width: 232px;margin-top: 20px;font-size: 20px;" type='submit' class='btn btn-outline-light'>
-            Войти
-        </button>
+    <form action="/patientlogin?phn={{ request.form.phn or '' }}" method="POST">
+        <div class="mb-3">
+            <label for="phn" class="form-label">Номер телефона</label>
+            <input type="text" class="form-control" id="phn" name="phn" required>
+        </div>
+        <div class="mb-3">
+            <label for="pass" class="form-label">Пароль</label>
+            <input type="password" class="form-control" id="pass" name="pass" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Войти</button>
     </form>
 </div>
 
