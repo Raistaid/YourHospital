@@ -32,6 +32,10 @@
             background-color: transparent !important;
             padding: 15px 0;
         }
+
+        .form-label {
+            font-weight: 500;
+        }
     </style>
 
     <!-- Bootstrap и иконки -->
@@ -63,41 +67,69 @@
         <div class="form-container">
             <form action='/makedoctorupdates?docid={{ docid }}' method="POST">
                 <div class="row g-3">
+                    <!-- Имя -->
                     <div class="col-md-6">
                         <label class="form-label">Имя*</label>
-                        <input type="text" class="form-control" id="firstname" name='firstname' required>
+                        <input type="text" class="form-control"
+                               id="firstname" name='firstname'
+                               value="{{ fn }}" required>
                     </div>
 
+                    <!-- Фамилия -->
                     <div class="col-md-6">
                         <label class="form-label">Фамилия*</label>
-                        <input type="text" class="form-control" id="lastname" name='lastname' required>
+                        <input type="text" class="form-control"
+                               id="lastname" name='lastname'
+                               value="{{ ln }}" required>
                     </div>
 
+                    <!-- Дата рождения -->
                     <div class="col-md-6">
                         <label class="form-label">Дата рождения*</label>
-                        <input type="date" class="form-control" id="dob" name='dob' required>
+                        <input type="date" class="form-control"
+                               id="dob" name='dob'
+                               value="{{ dob }}" required>
                     </div>
 
+                    <!-- Телефон -->
                     <div class="col-md-6">
-                        <label class="form-label">Номер телефона*</label>
-                        <input type="tel" class="form-control" id="phn" name='phn' required>
+                        <label class="form-label">Телефон*</label>
+                        <input type="tel" class="form-control"
+                               id="phn" name='phn'
+                               value="{{ phn }}" required>
                     </div>
 
+                    <!-- Адрес -->
                     <div class="col-12">
                         <label class="form-label">Адрес*</label>
-                        <input type="text" class="form-control" id="address" name='address' required>
+                        <input type="text" class="form-control"
+                               id="address" name='address'
+                               value="{{ add }}" required>
                     </div>
 
+                    <!-- Специальность -->
                     <div class="col-12">
                         <label class="form-label">Специальность*</label>
-                        <input type="text" class="form-control" id="speciality" name='speciality' required>
+                        <input type="text" class="form-control"
+                               id="speciality" name='speciality'
+                               value="{{ spec }}" required>
                     </div>
 
+                    <!-- Кнопка отправки -->
                     <div class="col-12 text-center mt-4">
                         <button type="submit" class="btn btn-outline-light px-5">
                             Обновить
                         </button>
                     </div>
+
+                    <!-- Сообщения об ошибках -->
+                    {% if mess %}
+                    <div class="col-12 text-center mt-2">
+                        <div class="alert alert-danger">
+                            {{ mess }}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </form>
         </div>

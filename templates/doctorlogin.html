@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Вход для врачей</title>
+    <title>Личный кабинет врача</title>
 
     <!-- Стили -->
     <style>
@@ -36,17 +36,6 @@
             padding-top: 15px;
         }
 
-        .nav-custom .nav-link {
-            transition: all 0.3s ease;
-            padding: 6px 15px !important;
-        }
-
-        .nav-custom .nav-link:hover {
-            transform: scale(1.05);
-            opacity: 0.9;
-        }
-
-        /* Черные границы таблиц */
         .custom-table {
             border: 1px solid #000 !important;
         }
@@ -54,12 +43,18 @@
         .custom-table th,
         .custom-table td {
             border: 1px solid #000 !important;
+            vertical-align: middle;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
         }
     </style>
 
     <!-- Bootstrap и иконки -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 </head>
 
 <body>
@@ -70,18 +65,14 @@
                 <ul class="navbar-nav gap-2">
                     <li class="nav-item">
                         <a class="nav-link active py-1"
-                           style="font-size: 18px;
-                                  background-color: rgba(128, 128, 128, 0.33);
-                                  border-radius: 15px;"
+                           style="background-color: rgba(128, 128, 128, 0.33); border-radius: 15px;"
                            href="/updatedoctor?docid={{docid}}">
                             Обновить профиль
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active py-1"
-                           style="font-size: 18px;
-                                  background-color: #dc3545;
-                                  border-radius: 15px;"
+                           style="background-color: #dc3545; border-radius: 15px;"
                            href="/">
                             Выйти
                         </a>
@@ -93,30 +84,42 @@
 
     <!-- Основной контент -->
     <main class="container-fluid">
-
         <!-- Подтвержденные записи -->
-        <div class="mt-3">
+        <div class="mt-4">
             <div class="table-container">
+                <h4 class="text-white text-center mb-3">Подтвержденные записи</h4>
                 <table class="table table-striped bg-white custom-table">
-                    <thead class="table-header">
+                    <thead>
                         <tr>
                             <th>Имя пациента</th>
-                            <th>Телефон пациента</th>
-                            <th>Дата приема</th>
+                            <th>Телефон</th>
+                            <th>Дата приёма</th>
+                            <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if fix_appointment_for_this_doctor %}
                             {% for appointment in fix_appointment_for_this_doctor %}
                             <tr>
-                                <td>{{ appointment[1] }}</td>
-                                <td>{{ appointment[2] }}</td>
-                                <td>{{ appointment[3] }}</td>
+                                <td>{{ appointment[1] }}</td>  <!-- Актуальное имя из Patients -->
+                                <td>{{ appointment[2] }}</td>  <!-- Телефон -->
+                                <td>{{ appointment[3] }}</td>  <!-- Дата -->
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="{{ url_for('doctordeleteconfirmedappointment',
+                                                            docid=docid,
+                                                            patnum=appointment[2],
+                                                            appdate=appointment[3]) }}"
+                                           class="btn btn-danger btn-sm">
+                                           Удалить
+                                        </a>
+                                    </div>
+                                </td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="3" class="no-requests">Нет записанных на прием</td>
+                                <td colspan="4" class="no-requests">Нет подтверждённых записей</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -124,15 +127,16 @@
             </div>
         </div>
 
-        <!-- Ожидающие записи -->
-        <div class="mt-4">
+        <!-- Ожидающие подтверждения -->
+        <div class="mt-5">
             <div class="table-container">
+                <h4 class="text-white text-center mb-3">Ожидающие подтверждения</h4>
                 <table class="table table-striped bg-white custom-table">
-                    <thead class="table-header">
+                    <thead>
                         <tr>
                             <th>Имя пациента</th>
-                            <th>Телефон пациента</th>
-                            <th>Дата приема</th>
+                            <th>Телефон</th>
+                            <th>Дата приёма</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
@@ -144,21 +148,27 @@
                                 <td>{{ request[2] }}</td>
                                 <td>{{ request[3] }}</td>
                                 <td>
-                                    <a href="{{ url_for('doctorapproveappointment',
-                                                        docid=docid,
-                                                        patnum=req[2],
-                                                        patname=req[1],
-                                                        appdate=req[3]) }}">
-                                        Одобрить
-                                    </a>
-                                    <a href="/doctordeleteappointment?docid={{ request[0] }}&patnum={{ request[2] }}"
-                                       class="btn btn-danger btn-sm btn-action">Удалить</a>
+                                    <div class="action-buttons">
+                                        <a href="{{ url_for('doctorapproveappointment',
+                                                            docid=docid,
+                                                            patnum=request[2],
+                                                            appdate=request[3]) }}"
+                                           class="btn btn-success btn-sm">
+                                           Одобрить
+                                        </a>
+                                        <a href="{{ url_for('doctordeleteappointment',
+                                                            docid=docid,
+                                                            patnum=request[2]) }}"
+                                           class="btn btn-danger btn-sm">
+                                           Отклонить
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="4" class="no-requests">Нет ожидающих на прием</td>
+                                <td colspan="4" class="no-requests">Нет запросов</td>
                             </tr>
                         {% endif %}
                     </tbody>

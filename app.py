@@ -127,21 +127,25 @@ def getdocdetails(docid):
 
 
 def retdocsandapps(docid):
-    """Возвращает подтвержденные записи для конкретного врача и их количество."""
-    c.execute(f"SELECT * FROM doctorappointments")
+    """Возвращает подтвержденные записи с актуальными именами пациентов."""
+    c.execute('''
+        SELECT 
+            da.docid, 
+            p.first_name || ' ' || p.last_name AS patient_name,
+            da.patientnum, 
+            da.appointmentdate 
+        FROM doctorappointments da
+        INNER JOIN patients p ON da.patientnum = p.phone_number
+        WHERE da.docid = ?
+    ''', (docid,))
     conn.commit()
-    docsandapps = c.fetchall()
-    docsandapps2 = []
-    for i in docsandapps:
-        if str(i[0]) == str(docid):
-            docsandapps2.append(i)
-    l = len(docsandapps2)
-    return docsandapps2, l
+    docsandapps2 = c.fetchall()
+    return docsandapps2, len(docsandapps2)
 
 
 def retapprequests(docid):
     """Возвращает запросы на прием для конкретного врача и их количество."""
-    c.execute(f"SELECT * FROM doctorappointmentrequests")
+    c.execute("SELECT * FROM doctorappointmentrequests")
     conn.commit()
     appreq = c.fetchall()
     appreq2 = []
@@ -149,7 +153,9 @@ def retapprequests(docid):
         if str(i[0]) == str(docid):
             appreq2.append(i)
     l = len(appreq2)
-    return appreq, l
+    return appreq2, l
+
+
 
 
 def ret_patient_reg_requests():
@@ -686,16 +692,53 @@ def doctorapproveappointment():
     patname = request.args.get('patname')
     appdate = request.args.get('appdate')
 
-    c.execute(f"INSERT INTO doctorappointments VALUES ('{docid}','{patname}','{patnum}','{appdate}')")
+    # Добавить только если такой записи ещё нет
+    c.execute('''SELECT * FROM doctorappointments 
+                 WHERE docid=? AND patientnum=? AND appointmentdate=?''',
+              (docid, patnum, appdate))
+    if not c.fetchone():
+        c.execute("INSERT INTO doctorappointments VALUES (?, ?, ?, ?)",
+                  (docid, patname, patnum, appdate))
+        conn.commit()
+
+    # Удалить только одну строку (с конкретной датой и пациентом)
+    c.execute('''DELETE FROM doctorappointmentrequests 
+                 WHERE docid=? AND patientnum=? AND appointmentdate=?''',
+              (docid, patnum, appdate))
     conn.commit()
-    c.execute(f"DELETE FROM doctorappointmentrequests WHERE patientnum='{str(patnum)}'")
-    conn.commit()
+
     appointment_requests_for_this_doctor, l1 = retapprequests(docid)
     fix_appointment_for_this_doctor, l2 = retdocsandapps(docid)
+
     return render_template('doctorlogin.html',
                            appointment_requests_for_this_doctor=appointment_requests_for_this_doctor,
-                           fix_appointment_for_this_doctor=fix_appointment_for_this_doctor, l1=l1, l2=l2, docid=docid)
+                           fix_appointment_for_this_doctor=fix_appointment_for_this_doctor,
+                           l1=l1, l2=l2,
+                           docid=docid,
+                           docname=getdocdetails(docid)[0])
 
+@app.route('/doctordeleteconfirmedappointment')
+def doctordeleteconfirmedappointment():
+    docid = request.args.get('docid')
+    patnum = request.args.get('patnum')
+    appdate = request.args.get('appdate')
+
+    c.execute('''
+        DELETE FROM doctorappointments 
+        WHERE docid=? AND patientnum=? AND appointmentdate=?
+    ''', (docid, patnum, appdate))
+    conn.commit()
+
+    appointment_requests_for_this_doctor, l1 = retapprequests(docid)
+    fix_appointment_for_this_doctor, l2 = retdocsandapps(docid)
+    docname = getdocdetails(docid)[0]
+
+    return render_template('doctorlogin.html',
+                           appointment_requests_for_this_doctor=appointment_requests_for_this_doctor,
+                           fix_appointment_for_this_doctor=fix_appointment_for_this_doctor,
+                           l1=l1, l2=l2,
+                           docid=docid,
+                           docname=docname)
 
 # Удаление записи врачом
 @app.route('/doctordeleteappointment')
@@ -770,55 +813,123 @@ def updatepatient():
 @app.route('/updatedoctor')
 def updatedoctor():
     docid = request.args['docid']
-    fn, ln, dob, phn, add, docid, passw, spec, status = getdocdetails(docid)
-    return render_template('updatedoctor.html', fn=fn, ln=ln, dob=dob, phn=phn, passw=passw, add=add, status=status,
-                           spec=spec, docid=docid)
+    doc_details = getdocdetails(docid)
+    if not doc_details:
+        return "Врач не найден", 404
+
+    return render_template('updatedoctor.html',
+                           fn=doc_details[0],
+                           ln=doc_details[1],
+                           dob=doc_details[2],
+                           phn=doc_details[3],
+                           add=doc_details[4],
+                           spec=doc_details[7],
+                           docid=docid)
 
 
 # Сохранение изменений врача
-@app.route('/makedoctorupdates', methods=['GET', 'POST'])
+@app.route('/makedoctorupdates', methods=['POST'])
 def makedoctorupdates():
-    firstname = request.form.get('firstname')
-    lastname = request.form.get('lastname')
-    dob = request.form.get('dob')
-    phn = request.form.get('phn')
-    address = request.form.get('address')
-    docid = request.args['docid']
-    spec = request.form.get('speciality')
-    c.execute("UPDATE doctors SET first_name=(?) WHERE doc_id=(?)", (firstname, docid))
-    conn.commit()
-    c.execute("UPDATE doctors SET last_name=(?) WHERE doc_id=(?)", (lastname, docid))
-    conn.commit()
-    c.execute("UPDATE doctors SET dob=(?) WHERE doc_id=(?)", (dob, docid))
-    conn.commit()
-    c.execute("UPDATE doctors SET phone_number=(?) WHERE doc_id=(?)", (phn, docid))
-    conn.commit()
-    c.execute("UPDATE doctors SET address=(?) WHERE doc_id=(?)", (address, docid))
-    conn.commit()
-    c.execute("UPDATE doctors SET speciality=(?) WHERE doc_id=(?)", (spec, docid))
-    conn.commit()
-    return render_template('doctorlogin.html', mess='Данные успешно обновлены')
+    docid = request.args.get('docid')
+    if not docid:
+        return "Ошибка: ID врача не указан", 400
+
+    # Получаем новые данные из формы
+    new_data = (
+        request.form.get('firstname'),
+        request.form.get('lastname'),
+        request.form.get('dob'),
+        request.form.get('phn'),
+        request.form.get('address'),
+        request.form.get('speciality'),
+        docid  # Используем оригинальный docid для WHERE
+    )
+
+    try:
+        # Обновляем данные одним запросом
+        c.execute('''
+            UPDATE doctors 
+            SET first_name = ?,
+                last_name = ?,
+                dob = ?,
+                phone_number = ?,
+                address = ?,
+                speciality = ?
+            WHERE doc_id = ?
+        ''', new_data)
+        conn.commit()
+
+        # Получаем обновленные данные для отображения
+        appointment_requests, l1 = retapprequests(docid)
+        confirmed_appointments, l2 = retdocsandapps(docid)
+        doc_details = getdocdetails(docid)
+
+        return render_template('doctorlogin.html',
+                            mess='Данные успешно обновлены',
+                            docid=docid,
+                            docname=doc_details[0],
+                            appointment_requests_for_this_doctor=appointment_requests,
+                            fix_appointment_for_this_doctor=confirmed_appointments,
+                            l1=len(appointment_requests),
+                            l2=len(confirmed_appointments))
+
+    except Exception as e:
+        print(f"Ошибка обновления врача: {e}")
+        conn.rollback()
+        return render_template('updatedoctor.html',
+                            mess="Ошибка обновления данных",
+                            docid=docid)
 
 
 # Сохранение изменений пациента
-@app.route('/makepatientupdates', methods=['GET', 'POST'])
+@app.route('/makepatientupdates', methods=['POST'])
 def makepatientupdates():
+    # Получаем PHN из URL-параметра
+    phn = request.args.get('phn')
+
+    # Получаем данные из формы
     firstname = request.form.get('firstname')
     lastname = request.form.get('lastname')
     dob = request.form.get('dob')
-    phn = request.form.get('phn')
     address = request.form.get('address')
-    c.execute("UPDATE patients SET first_name=(?) WHERE phone_number=(?)", (firstname, phn))
-    conn.commit()
-    c.execute("UPDATE patients SET last_name=(?) WHERE phone_number=(?)", (lastname, phn))
-    conn.commit()
-    c.execute("UPDATE patients SET dob=(?) WHERE phone_number=(?)", (dob, phn))
-    conn.commit()
-    c.execute("UPDATE patients SET address=(?) WHERE phone_number=(?)", (address, phn))
-    conn.commit()
-    return render_template('patientlogin.html', mess='Данные успешно обновлены')
 
+    try:
+        # Обновляем все поля одним запросом
+        c.execute('''
+            UPDATE patients 
+            SET first_name = ?, 
+                last_name = ?, 
+                dob = ?, 
+                address = ? 
+            WHERE phone_number = ?
+        ''', (firstname, lastname, dob, address, phn))
+        conn.commit()
 
+        # Получаем обновленные данные для отображения
+        docsandapps, l = retalldocsandapps()
+        docname_docid, l2 = ret_docname_docspec()
+        docnames = [getdocname(app[0]) for app in docsandapps]
+
+        return render_template(
+            'patientlogin.html',
+            mess='Данные успешно обновлены',
+            phn=phn,
+            docsandapps=docsandapps,
+            docnames=docnames,
+            docname_docid=docname_docid,
+            l=l,
+            l2=l2
+        )
+
+    except Exception as e:
+        print(f"Ошибка при обновлении: {e}")
+        return render_template('updatepatient.html',
+                               mess="Ошибка обновления данных",
+                               phn=phn,
+                               fn=firstname,
+                               ln=lastname,
+                               dob=dob,
+                               add=address)
 # Запуск приложения
 if __name__ == '__main__':
     app.run(debug=True)
