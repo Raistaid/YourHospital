@@ -1,0 +1,14 @@
+2025-05-21 22:02:31,241 DEBUG __main__ Инициализация подключения к SQLite...
+2025-05-21 22:02:31,244 INFO __main__ Создание таблиц, если они не существуют
+2025-05-21 22:02:31,244 DEBUG __main__ Создание таблицы doctors
+2025-05-21 22:02:31,245 DEBUG __main__ Создание таблицы patients
+2025-05-21 22:02:31,245 DEBUG __main__ Создание таблицы superusercreds
+2025-05-21 22:02:31,246 DEBUG __main__ Создание таблицы doctorappointmentrequests
+2025-05-21 22:02:31,246 DEBUG __main__ Создание таблицы doctorappointments
+2025-05-21 22:02:31,246 DEBUG __main__ Проверка наличия учетных данных администратора
+2025-05-21 22:02:31,246 INFO __main__ Учетные данные администратора уже существуют
+2025-05-21 22:02:31,247 DEBUG __main__ Инициализация базы данных завершена
+2025-05-21 22:02:31,393 INFO werkzeug [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-05-21 22:02:31,393 INFO werkzeug [33mPress CTRL+C to quit[0m
+2025-05-21 22:02:31,402 INFO werkzeug  * Restarting with stat
