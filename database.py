@@ -3,7 +3,7 @@ from config import logger
 
 # Подключение к SQLite 3
 logger.debug("Инициализация подключения к SQLite...")
-conn = sqlite3.connect('../database/lifecare.db', check_same_thread=False)
+conn = sqlite3.connect('database/lifecare.db', check_same_thread=False)
 c = conn.cursor()
 
 # Создание таблиц

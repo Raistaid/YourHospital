@@ -3,7 +3,6 @@ from config import logger
 from utils import datetoday
 import sqlite3
 
-# Функции для работы с данными
 def retalldocsandapps():
     logger.debug("Получение всех записей doctorappointments")
     c.execute(f"SELECT * FROM doctorappointments")
@@ -13,14 +12,12 @@ def retalldocsandapps():
     logger.debug(f"Найдено {l} записей")
     return docsandapps, l
 
-
 def getpatdetails(phn):
     logger.debug(f"Получение данных пациента по номеру телефона: {phn}")
     c.execute("SELECT * FROM patients WHERE phone_number=?", (phn,))
     conn.commit()
     patient = c.fetchone()
     return patient
-
 
 def getdocdetails(docid):
     logger.debug(f"Получение данных врача по ID: {docid}")
@@ -31,9 +28,7 @@ def getdocdetails(docid):
         if str(i[5]) == str(docid):
             return i
 
-
 def retdocsandapps(docid):
-    """Возвращает подтвержденные записи с актуальными именами пациентов."""
     c.execute('''
         SELECT 
             da.docid, 
@@ -50,9 +45,7 @@ def retdocsandapps(docid):
     logger.debug(f"Найдено {len(docsandapps2)} записей для врача")
     return docsandapps2, len(docsandapps2)
 
-
 def retapprequests(docid):
-    """Возвращает запросы на прием для конкретного врача и их количество."""
     c.execute("SELECT * FROM doctorappointmentrequests")
     logger.debug(f"Получение запросов на прием к врачу по ID: {docid}")
     conn.commit()
@@ -65,7 +58,6 @@ def retapprequests(docid):
     logger.debug(f"Найдено {len(appreq2)} запросов для врача")
     return appreq2, l
 
-
 def ret_patient_reg_requests():
     logger.debug("Получение всех заявок на регистрацию пациентов")
     c.execute('SELECT * FROM patients')
@@ -74,7 +66,6 @@ def ret_patient_reg_requests():
     patient_reg_requests = [d for d in data if str(d[-1]) == '0']
     logger.debug(f"Найдено {len(patient_reg_requests)} заявок")
     return patient_reg_requests
-
 
 def ret_doctor_reg_requests():
     logger.debug("Получение всех заявок на регистрацию врачей")
@@ -88,7 +79,6 @@ def ret_doctor_reg_requests():
     logger.debug(f"Найдено {len(doctor_reg_requests)} заявок")
     return doctor_reg_requests
 
-
 def ret_registered_patients():
     logger.debug("Получение зарегистрированных пациентов")
     c.execute('SELECT * FROM patients')
@@ -100,7 +90,6 @@ def ret_registered_patients():
             registered_patients.append(d)
     logger.debug(f"Найдено {len(registered_patients)} зарегистрированных пациентов")
     return registered_patients
-
 
 def ret_registered_doctors():
     logger.debug("Получение зарегистрированных врачей")
@@ -114,7 +103,6 @@ def ret_registered_doctors():
     logger.debug(f"Найдено {len(registered_doctors)} зарегистрированных врачей")
     return registered_doctors
 
-
 def ret_docname_docspec():
     logger.debug("Формирование списка врачей с ID и специальностью")
     c.execute('SELECT first_name, last_name, doc_id, speciality FROM doctors WHERE status=1')
@@ -127,7 +115,6 @@ def ret_docname_docspec():
     logger.debug(f"Сформировано {len(docname_docid)} записей")
     return docname_docid, len(docname_docid)
 
-
 def getdocname(docid):
     logger.debug(f"Получение имени врача по ID: {docid}")
     c.execute('SELECT * FROM doctors')
@@ -137,8 +124,6 @@ def getdocname(docid):
         if str(i[5]) == str(docid):
             return i[0] + '-' + i[1]
 
-
-# Возвращает имя и фамилию пациента по номеру телефона
 def getpatname(patnum):
     logger.debug(f"Получение имени пациента по номеру телефона: {patnum}")
     c.execute('SELECT * FROM patients')
@@ -150,8 +135,6 @@ def getpatname(patnum):
     logger.debug("Пациент не найден")
     return -1
 
-
-# Возвращает список всех ID врачей.
 def get_all_docids():
     logger.debug("Получение всех ID врачей")
     c.execute('SELECT * FROM doctors')
@@ -163,8 +146,6 @@ def get_all_docids():
     logger.debug(f"Получено {len(docids)} ID")
     return docids
 
-
-# Возвращает список всех номеров телефонов пациентов
 def get_all_patnums():
     logger.debug("Получение всех номеров пациентов")
     c.execute('SELECT * FROM patients')
